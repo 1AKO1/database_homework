@@ -175,13 +175,14 @@ NODE* cluster_node(char *cluster_type, NODE *relattr, char *relname, NODE *condi
 }
 
 //分组聚集
-NODE* group_cluster_node(NODE* select_relattr, char* cluster_type, NODE* cluster_relattr, char* relname, NODE* group_relattr) {
+NODE* group_cluster_node(NODE* select_relattr, char* cluster_type, NODE* cluster_relattr, char* relname, NODE *conditionlist, NODE* group_relattr) {
     NODE* n = newnode(N_GROUP_CLUSTER);
     n->u.GROUP_CLUSTER.select_relattr = select_relattr;
     n->u.GROUP_CLUSTER.cluster_type = cluster_type;
     n->u.GROUP_CLUSTER.cluster_relattr = cluster_relattr;
     n->u.GROUP_CLUSTER.relname = relname;
     n->u.GROUP_CLUSTER.group_relattr = group_relattr;
+    n->u.GROUP_CLUSTER.conditionlist = conditionlist;
     return n;
 }
 //
@@ -191,6 +192,17 @@ NODE* select_like_node(NODE *relattrlist,char *relname, NODE *like_relattr, NODE
     n->u.SELECT_LIKE.relname=relname;
     n->u.SELECT_LIKE.like_relattr=like_relattr;
     n->u.SELECT_LIKE.like_sql_type=like_sql_type;
+    return n;
+}
+
+NODE *query_order_node(NODE *relattrlist, char *relname, NODE *conditionlist, NODE *order_attr) {
+    NODE *n = newnode(N_QUERY_ORDER);
+
+    n->u.QUERY_ORDER.relattrlist = relattrlist;
+    n->u.QUERY_ORDER.relname = relname;
+    n->u.QUERY_ORDER.conditionlist = conditionlist;
+    n->u.QUERY_ORDER.order_relattr = order_attr;
+
     return n;
 }
 

@@ -54,7 +54,7 @@ typedef enum {
     N_CLUSTER,  //聚集节点
     N_GROUP_CLUSTER, //分组聚集节点
     N_SELECT_LIKE, //
-    N_LIKE_SQL_CHAR
+    N_QUERY_ORDER,
 } NODEKIND;
 
 
@@ -204,6 +204,7 @@ typedef struct node {
             struct node* cluster_relattr;
             char* relname;
             struct node* group_relattr;
+            struct node *conditionlist;
         }GROUP_CLUSTER;
 
         struct {
@@ -212,6 +213,13 @@ typedef struct node {
             struct node *like_relattr;
             struct node *like_sql_type;
         } SELECT_LIKE;
+
+        struct {
+            struct node *relattrlist;
+            char* relname;
+            struct node *conditionlist;
+            struct node *order_relattr;
+        } QUERY_ORDER;
 
     } u;
 } NODE;
@@ -247,8 +255,9 @@ NODE *list_node(NODE *n);
 NODE *prepend(NODE *n, NODE *list);
 NODE *prepend_list(NODE *l, NODE* list);
 NODE *cluster_node(char *cluster_type, NODE *relattr, char *relname, NODE *conditionlist);
-NODE *group_cluster_node(NODE *select_relattr, char *cluster_type, NODE *cluster_relattr, char *relname, NODE *group_relattr);
+NODE *group_cluster_node(NODE *select_relattr, char *cluster_type, NODE *cluster_relattr, char *relname, NODE *conditionlist, NODE *group_relattr);
 NODE *select_like_node(NODE *relattrlist,char *relname, NODE *like_relattr, NODE *like_sql_char);
+NODE *query_order_node(NODE *relattrlist, char *relname, NODE *conditionlist, NODE *order_attr);
 
 #ifdef __cplusplus
 extern "C" void reset_scanner(void);

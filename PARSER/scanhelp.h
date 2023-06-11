@@ -170,6 +170,8 @@ static int get_id(char *s) {
         return yylval.ival = RW_BY;
     if (!strcmp(string, "like"))
         return yylval.ival = RW_LIKE;
+    if (!strcmp(string, "order"))
+        return yylval.ival = RW_ORDER;
     
 
     /*  unresolved lexemes are strings */

@@ -124,6 +124,7 @@ QL_Manager *pQlm;          // QL component manager
       RW_GROUP
       RW_BY
       RW_LIKE
+      RW_ORDER
       T_WILDCARD
       T_PLACE
 
@@ -183,6 +184,7 @@ QL_Manager *pQlm;          // QL component manager
       group_cluster
       select_like
       like_sql_list
+      query_order
       like_wildcard
       like_place
       like_string
@@ -248,6 +250,7 @@ dml
    | cluster
    | group_cluster
    | select_like
+   | query_order
    ;
 
 utility
@@ -438,9 +441,9 @@ cluster
     ;
 
 group_cluster
-    : RW_SELECT relattr ',' T_STRING '(' relattr ')' RW_FROM T_STRING RW_GROUP RW_BY relattr
+    : RW_SELECT relattr ',' T_STRING '(' relattr ')' RW_FROM T_STRING opt_where_clause RW_GROUP RW_BY relattr
     {
-        $$ = group_cluster_node($2, $4, $6, $9, $12);
+        $$ = group_cluster_node($2, $4, $6, $9, $10, $13);
     }
     ;
 
@@ -450,6 +453,13 @@ select_like
         $$ = select_like_node($2, $4,$6,$8);
     }
     ;
+
+query_order
+   : RW_SELECT non_mt_select_clause RW_FROM T_STRING opt_where_clause RW_ORDER RW_BY relattr
+   {
+      $$ = query_order_node($2, $4, $5, $8);
+   }
+   ;
 
 insert
    : RW_INSERT RW_INTO T_STRING RW_VALUES non_mt_quoted_values_list

@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <cassert>
+#include <iostream>
 
 #include "../redbase.h"
 #include "parser_internal.h"
@@ -69,7 +70,7 @@ static char current_db[MAXNAME];
 RC interp(NODE *n) {
     //返回的错误值
     RC errval = 0;
-
+    std::cout << "heihei" << std::endl;
     //如果输入不是来自终端，则回显查询
     //if (!isatty(0))
     //    echo_query(n);
@@ -275,6 +276,7 @@ RC interp(NODE *n) {
         char      *relations[MAXATTRS];
         int       nConditions = 0;
         Condition conditions[MAXATTRS];
+        std::cout << "wuhu" << std::endl;
 
         /* Make a list of RelAttrs suitable for sending to Query */
         nSelAttrs = mk_rel_attrs(n->u.QUERY.relattrlist, MAXATTRS,
@@ -328,6 +330,15 @@ RC interp(NODE *n) {
         RelAttr select_relAttr;
         RelAttr cluster_relAttr;
         RelAttr group_relAttr;
+        int       nConditions = 0;
+        Condition conditions[MAXATTRS];
+
+        nConditions = mk_conditions(n->u.GROUP_CLUSTER.conditionlist, MAXATTRS,
+                                    conditions);
+        if (nConditions < 0) {
+            print_error((char*)"cluster", nConditions);
+            break;
+        }
 
         /* Make a RelAttr suitable for sending to group_Cluster */
         mk_rel_attr(n->u.GROUP_CLUSTER.select_relattr, select_relAttr);
@@ -336,7 +347,7 @@ RC interp(NODE *n) {
 
       
         errval = pQlm->GROUP_Cluster(select_relAttr,n->u.GROUP_CLUSTER.cluster_type,cluster_relAttr,
-                                       n->u.GROUP_CLUSTER.relname,group_relAttr);
+                                       n->u.GROUP_CLUSTER.relname,nConditions, conditions, group_relAttr);
         break;
     }
 
@@ -360,6 +371,36 @@ RC interp(NODE *n) {
         errval = pQlm->Select_like(nSelAttrs, relAttrs,n->u.SELECT_LIKE.relname,like_relAttr,like_str);
         break;
     }
+
+    case N_QUERY_ORDER: {
+        int       nSelAttrs = 0;
+        RelAttr  relAttrs[MAXATTRS];
+        int       nConditions = 0;
+        Condition conditions[MAXATTRS];
+        RelAttr orderAttr;
+        /* Make a list of RelAttrs suitable for sending to Query */
+        nSelAttrs = mk_rel_attrs(n->u.QUERY_ORDER.relattrlist, MAXATTRS,
+                                 relAttrs);
+        if (nSelAttrs < 0) {
+            print_error((char*)"select", nSelAttrs);
+            break;
+        }
+
+        /* Make a list of Conditions suitable for sending to Query */
+        nConditions = mk_conditions(n->u.QUERY_ORDER.conditionlist, MAXATTRS,
+                                    conditions);
+        if (nConditions < 0) {
+            print_error((char*)"cluster", nConditions);
+            break;
+        }
+
+        mk_rel_attr(n->u.QUERY_ORDER.order_relattr, orderAttr);
+
+        /* Make the call to Select */
+        errval = pQlm->Select_order(nSelAttrs, relAttrs,n->u.QUERY_ORDER.relname, nConditions, conditions, orderAttr);
+        break;
+    }
+
 
     case N_INSERT: {          /* for Insert() */
         int nValues = 0;

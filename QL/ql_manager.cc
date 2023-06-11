@@ -944,7 +944,7 @@ RC QL_Manager::Cluster(const char* cluster_type, const RelAttr &cluAttr, const c
 */
 
 RC QL_Manager::GROUP_Cluster(const RelAttr &sleAttr, const char *cluster_type, const RelAttr &cluAttr,
-                             const char *relName, const RelAttr &groAttr) {
+                             const char *relName,int nConditions, const Condition *conditions, const RelAttr &groAttr) {
     if (!strcmp(relName, "relcat") || !strcmp(relName, "attrcat")) return QL_FORBIDDEN;
     if (strcmp(sleAttr.attrName, groAttr.attrName)!=0) {
         std::cout<<"Illegal aggregate statement" << std::endl;
@@ -994,6 +994,13 @@ RC QL_Manager::GROUP_Cluster(const RelAttr &sleAttr, const char *cluster_type, c
         std::cout << "error: String type" << std::endl;
         return 0;
     }
+
+    // process conditions
+    std::vector<QL_Condition> conds;
+    // 检查解析器传入的条件列表（Condition对象）是否合法，并生成对应QL_Condition对象的条件列表，存储在conds中
+    TRY(CheckConditionsValid(relName, nConditions, conditions, attrMap, conds));
+
+
     if(selAttrInfo.attrType == INT) {
         std::map<int, int> sumMap;    // 每组对应的sum
         std::map<int, int> minMap;    // 每组对应的min
@@ -1003,45 +1010,55 @@ RC QL_Manager::GROUP_Cluster(const RelAttr &sleAttr, const char *cluster_type, c
         while ((retcode = scan.GetNextRec(record)) != RM_EOF) {
             if (retcode) return retcode;
             char *data;
+            bool *isnull;
             // 获取记录中数据（的起始位置）
             TRY(record.GetData(data));
-            //panduanjuleideleixing
-            switch (n_type) {
-                case 1:
+            // 获取空值字段数据
+            TRY(record.GetIsnull(isnull));
+            bool shouldCluster = true;
+            // 判断当前记录是否满足条件列表中所有条件
+            for (int i = 0; i < nConditions && shouldCluster; ++i)
+                shouldCluster = checkSatisfy(data, isnull, conds[i]);
 
-                    if (sumMap.find(*(int *) (data + selAttrInfo.offset)) != sumMap.end()) {
-                        sumMap[*(int *) (data + selAttrInfo.offset)] += *(int *) (data + cluAttrInfo.offset);
-                    } else {
-                        sumMap[*(int *) (data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
-                    }
-                    break;
-                case 2:
-                    if (sumMap.find(*(int *) (data + selAttrInfo.offset)) != sumMap.end()) {
-                        sumMap[*(int *) (data + selAttrInfo.offset)] += *(int *) (data + cluAttrInfo.offset);
-                        numMap[*(int *) (data + selAttrInfo.offset)] += 1;
-                    } else {
-                        sumMap[*(int *) (data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
-                        numMap[*(int *) (data + selAttrInfo.offset)] = 1;
-                    }
-                    break;
-                case 3:
-                    if (minMap.find(*(int *) (data + selAttrInfo.offset)) != minMap.end()) {
-                        if (*(int *) (data + cluAttrInfo.offset) < minMap[*(int *) (data + selAttrInfo.offset)]) {
+            if(shouldCluster){
+                //panduanjuleideleixing
+                switch (n_type) {
+                    case 1:
+
+                        if (sumMap.find(*(int *) (data + selAttrInfo.offset)) != sumMap.end()) {
+                            sumMap[*(int *) (data + selAttrInfo.offset)] += *(int *) (data + cluAttrInfo.offset);
+                        } else {
+                            sumMap[*(int *) (data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
+                        }
+                        break;
+                    case 2:
+                        if (sumMap.find(*(int *) (data + selAttrInfo.offset)) != sumMap.end()) {
+                            sumMap[*(int *) (data + selAttrInfo.offset)] += *(int *) (data + cluAttrInfo.offset);
+                            numMap[*(int *) (data + selAttrInfo.offset)] += 1;
+                        } else {
+                            sumMap[*(int *) (data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
+                            numMap[*(int *) (data + selAttrInfo.offset)] = 1;
+                        }
+                        break;
+                    case 3:
+                        if (minMap.find(*(int *) (data + selAttrInfo.offset)) != minMap.end()) {
+                            if (*(int *) (data + cluAttrInfo.offset) < minMap[*(int *) (data + selAttrInfo.offset)]) {
+                                minMap[*(int *) (data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
+                            }
+                        } else {
                             minMap[*(int *) (data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
                         }
-                    } else {
-                        minMap[*(int *) (data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
-                    }
-                    break;
-                case 4:
-                    if (maxMap.find(*(int *) (data + selAttrInfo.offset)) != maxMap.end()) {
-                        if (*(int *) (data + cluAttrInfo.offset) > maxMap[*(int *) (data + selAttrInfo.offset)]) {
+                        break;
+                    case 4:
+                        if (maxMap.find(*(int *) (data + selAttrInfo.offset)) != maxMap.end()) {
+                            if (*(int *) (data + cluAttrInfo.offset) > maxMap[*(int *) (data + selAttrInfo.offset)]) {
+                                maxMap[*(int *) (data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
+                            }
+                        } else {
                             maxMap[*(int *) (data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
                         }
-                    } else {
-                        maxMap[*(int *) (data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
-                    }
-                    break;
+                        break;
+                }
             }
         }
         TRY(scan.CloseScan());
@@ -1181,7 +1198,6 @@ RC QL_Manager::GROUP_Cluster(const RelAttr &sleAttr, const char *cluster_type, c
 
 RC QL_Manager::Select_like(int nSelAttrs, const RelAttr *selAttrs, const char *relName, const RelAttr &likeAttr,
                            const char *like_str) {
-    int like_type=1;
     // 打开查询涉及的数据库表文件
     RM_FileHandle fileHandle;
     TRY(pRmm->OpenFile(relName, fileHandle));
@@ -1263,8 +1279,115 @@ RC QL_Manager::Select_like(int nSelAttrs, const RelAttr *selAttrs, const char *r
 }
 
 
+RC QL_Manager::Select_order(int nSelAttrs,                   // select属性的个数
+                            const RelAttr selAttrs[],        // 属性列表
+                            const char* relName,
+                            int   nConditions,               // where条件个数
+                            const Condition conditions[],
+                            const RelAttr &orderAttr) {
+    // 打开查询涉及的数据库表文件
+    RM_FileHandle fileHandle;
+    TRY(pRmm->OpenFile(relName, fileHandle));
+    RM_FileScan scan;
+    TRY(scan.OpenScan(fileHandle, INT, 4, 0, NO_OP, NULL));
+    RM_Record record;
+    std::vector<RM_Record> recordList; // list of conditional record;
+    RC retcode;
+
+    RelCatEntry relEntries;
+    TRY(pSmm->GetRelEntry(relName, relEntries));
+    VLOG(2) << "files opened";
+
+    /**
+     * Check if like query is valid
+     */
+    // create mappings of attribute names to corresponding info
+    int attrCount;
+    std::vector<DataAttrInfo> attributes;   //关系表中的属性列表
+    // 获取关系表的属性个数与属性列表
+    TRY(pSmm->GetDataAttrInfo(relName, attrCount, attributes, true));
+    std::map<std::string, DataAttrInfo> attrMap;    // 属性名字符串向属性DataAttrInfo映射的map
+    for (auto info : attributes)
+        attrMap[info.attrName] = info;
+    VLOG(2) << "attribute name mapping created";
+
+    // 检查查询的属性是否存在
+    for ( int i=0; i<nSelAttrs;i++)
+        TRY(checkAttrBelongsToRel(selAttrs[i], relName));
+    if (nSelAttrs == 1 && !strcmp(selAttrs[0].attrName, "*")) {
+        nSelAttrs = attrCount;
+    }
+
+    DataAttrInfo selAttrInfolist[nSelAttrs];
+
+    if (nSelAttrs==attrCount){
+        int this_num=0;
+        for (auto info : attributes){
+            selAttrInfolist[this_num++] = info;
+        }
+    }else{
+        for ( int i=0;i<nSelAttrs;i++)
+            selAttrInfolist[i]=attrMap[selAttrs[i].attrName];
+    }
+
+    std::vector<QL_Condition> conds;
+    // 检查解析器传入的条件列表（Condition对象）是否合法，并生成对应QL_Condition对象的条件列表，存储在conds中
+    TRY(CheckConditionsValid(relName, nConditions, conditions, attrMap, conds));
 
 
+    // check orderAttr is contained by relName table;
+    TRY(checkAttrBelongsToRel(orderAttr, relName));
+    DataAttrInfo orderAttrInfo = attrMap[orderAttr.attrName];
+    VLOG(2) << "all attributes exist";
+
+    Printer::myPrintHeader2(std::cout, nSelAttrs,selAttrInfolist);
+    std::vector<int> is_result;   //关系表中的属性列表
+    int count=0;
+    while ((retcode = scan.GetNextRec(record)) != RM_EOF) {
+        if (retcode) return retcode;
+        char *data;
+        bool *isnull;
+        // 获取记录中数据（的起始位置）
+        TRY(record.GetData(data));
+        // 获取空值字段数据
+        TRY(record.GetIsnull(isnull));
+        bool shouldCluster = true;
+        // 判断当前记录是否满足条件列表中所有条件
+        for (int i = 0; i < nConditions && shouldCluster; ++i)
+            shouldCluster = checkSatisfy(data, isnull, conds[i]);
+
+        if (shouldCluster)
+            count++;
+//            recordList.push_back(record);
+    }
+
+//    std::sort(recordList.begin(), recordList.end(), [orderAttrInfo](const RM_Record* record1, const RM_Record* record2) {
+//        char* data1;
+//        char* data2;
+//        record1->GetData(data1);
+//        record2->GetData(data2);
+//
+//        int order1 = *(int*)(data1 + orderAttrInfo.offset);
+//        int order2 = *(int*)(data2 + orderAttrInfo.offset);
+//
+//        return order1 < order2;
+//    });
+
+    std::cout << "condition successfully:" << count << std:: endl;
+//    for (const RM_Record &record : recordList) {
+//        char* data;
+//        record.GetData(data);
+//
+//        int order = *(int*)(data + orderAttrInfo.offset);
+//        std::cout << order << std:: endl;
+//    }
+
+
+    TRY(scan.CloseScan());
+    TRY(pRmm->CloseFile(fileHandle));
+    std::cout << count<< " tuple(s).\n";
+    return 0;
+}
 
 
 /**

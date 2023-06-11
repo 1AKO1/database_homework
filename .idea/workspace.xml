@@ -16,14 +16,10 @@
       <change beforePath="$PROJECT_DIR$/PARSER/interp.cc" beforeDir="false" afterPath="$PROJECT_DIR$/PARSER/interp.cc" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PARSER/nodes.cc" beforeDir="false" afterPath="$PROJECT_DIR$/PARSER/nodes.cc" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PARSER/parse.y" beforeDir="false" afterPath="$PROJECT_DIR$/PARSER/parse.y" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PARSER/parser.h" beforeDir="false" afterPath="$PROJECT_DIR$/PARSER/parser.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PARSER/parser_internal.h" beforeDir="false" afterPath="$PROJECT_DIR$/PARSER/parser_internal.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PARSER/scanhelp.h" beforeDir="false" afterPath="$PROJECT_DIR$/PARSER/scanhelp.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/QL/ql.h" beforeDir="false" afterPath="$PROJECT_DIR$/QL/ql.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/QL/ql_manager.cc" beforeDir="false" afterPath="$PROJECT_DIR$/QL/ql_manager.cc" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SM/printer.cc" beforeDir="false" afterPath="$PROJECT_DIR$/SM/printer.cc" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SM/printer.h" beforeDir="false" afterPath="$PROJECT_DIR$/SM/printer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/redbase.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/redbase.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -56,7 +52,7 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="cf.first.check.clang-format" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../database_homework" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../DataBase4_original" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.path.for.package.eslint" value="project" />
@@ -66,11 +62,6 @@
     <property name="nodejs_package_manager_path" value="npm" />
   </component>
   <component name="RunManager">
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
     <configuration name="microDBMS" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="microDBMS" TARGET_NAME="microDBMS" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="microDBMS" RUN_TARGET_NAME="microDBMS">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -91,7 +82,9 @@
       <option name="presentableId" value="Default" />
       <updated>1686018905318</updated>
       <workItem from="1686018907259" duration="20640000" />
-      <workItem from="1686452065803" duration="11661000" />
+      <workItem from="1686452065803" duration="12548000" />
+      <workItem from="1686474502210" duration="13063000" />
+      <workItem from="1686492440128" duration="1267000" />
     </task>
     <servers />
   </component>
@@ -115,18 +108,28 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/PARSER/interp.cc</url>
-          <line>85</line>
-          <option name="timeStamp" value="13" />
+          <line>343</line>
+          <option name="timeStamp" value="31" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/PARSER/interp.cc</url>
+          <line>71</line>
+          <option name="timeStamp" value="53" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/PARSER/nodes.cc</url>
+          <line>158</line>
+          <option name="timeStamp" value="57" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/QL/ql.h</url>
+          <line>31</line>
+          <option name="timeStamp" value="58" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/QL/ql_manager.cc</url>
-          <line>124</line>
-          <option name="timeStamp" value="26" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/QL/ql_manager.cc</url>
-          <line>122</line>
-          <option name="timeStamp" value="27" />
+          <line>1288</line>
+          <option name="timeStamp" value="59" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
