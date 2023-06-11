@@ -29,7 +29,7 @@ extern bool output_prompt;
 // main
 //
 int main(int argc, char *argv[]) {
-    FLAGS_logtostderr = 0;
+    FLAGS_logtostderr = 1;
     google::ParseCommandLineFlags(&argc, &argv, true);
     google::InitGoogleLogging(argv[0]);
 
@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
         CHECK(yyin != NULL) << "cannot open " << FLAGS_c;
         output_prompt = false;
     } else {
-        output_prompt = true; // go here
+        output_prompt = true;
     }
 
     RBparse(pfm, smm, qlm);

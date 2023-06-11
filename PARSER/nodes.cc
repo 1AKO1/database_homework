@@ -164,9 +164,9 @@ NODE *query_node(NODE *relattrlist, NODE *rellist, NODE *conditionlist) {
     return n;
 }
 
-// cluster query
-NODE* cluster_node(char *cluster_type, NODE *relattr, char *relname, NODE *conditionlist){
-    NODE* n = newnode(N_CLUSTER); // new a cluster Node
+//cluster
+NODE* cluster_node(char *cluster_type, NODE *relattr, char *relname, NODE *conditionlist) {
+    NODE* n = newnode(N_CLUSTER);
     n->u.CLUSTER.cluster_type = cluster_type;
     n->u.CLUSTER.relattr = relattr;
     n->u.CLUSTER.relname = relname;
@@ -174,7 +174,7 @@ NODE* cluster_node(char *cluster_type, NODE *relattr, char *relname, NODE *condi
     return n;
 }
 
-// group cluster query
+//分组聚集
 NODE* group_cluster_node(NODE* select_relattr, char* cluster_type, NODE* cluster_relattr, char* relname, NODE* group_relattr) {
     NODE* n = newnode(N_GROUP_CLUSTER);
     n->u.GROUP_CLUSTER.select_relattr = select_relattr;
@@ -184,8 +184,7 @@ NODE* group_cluster_node(NODE* select_relattr, char* cluster_type, NODE* cluster
     n->u.GROUP_CLUSTER.group_relattr = group_relattr;
     return n;
 }
-
-// like query
+//
 NODE* select_like_node(NODE *relattrlist,char *relname, NODE *like_relattr, NODE *like_sql_type){
     NODE* n=newnode(N_SELECT_LIKE);
     n->u.SELECT_LIKE.relattrlist=relattrlist;
@@ -194,6 +193,7 @@ NODE* select_like_node(NODE *relattrlist,char *relname, NODE *like_relattr, NODE
     n->u.SELECT_LIKE.like_sql_type=like_sql_type;
     return n;
 }
+
 
 //insert
 NODE *insert_node(char *relname, NODE *valuelist) {

@@ -11,7 +11,20 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8ba2154-e24b-4940-84f1-7686ef0ca22d" name="Default Changelist" comment="" />
+    <list default="true" id="d8ba2154-e24b-4940-84f1-7686ef0ca22d" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PARSER/interp.cc" beforeDir="false" afterPath="$PROJECT_DIR$/PARSER/interp.cc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PARSER/nodes.cc" beforeDir="false" afterPath="$PROJECT_DIR$/PARSER/nodes.cc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PARSER/parse.y" beforeDir="false" afterPath="$PROJECT_DIR$/PARSER/parse.y" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PARSER/parser.h" beforeDir="false" afterPath="$PROJECT_DIR$/PARSER/parser.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PARSER/parser_internal.h" beforeDir="false" afterPath="$PROJECT_DIR$/PARSER/parser_internal.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PARSER/scanhelp.h" beforeDir="false" afterPath="$PROJECT_DIR$/PARSER/scanhelp.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/QL/ql.h" beforeDir="false" afterPath="$PROJECT_DIR$/QL/ql.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/QL/ql_manager.cc" beforeDir="false" afterPath="$PROJECT_DIR$/QL/ql_manager.cc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SM/printer.cc" beforeDir="false" afterPath="$PROJECT_DIR$/SM/printer.cc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SM/printer.h" beforeDir="false" afterPath="$PROJECT_DIR$/SM/printer.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/redbase.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/redbase.cpp" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -43,13 +56,19 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="cf.first.check.clang-format" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../DataBase4_ok" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../database_homework" />
+    <property name="node.js.detected.package.eslint" value="true" />
+    <property name="node.js.detected.package.tslint" value="true" />
+    <property name="node.js.path.for.package.eslint" value="project" />
+    <property name="node.js.path.for.package.tslint" value="project" />
+    <property name="node.js.selected.package.eslint" value="(autodetect)" />
+    <property name="node.js.selected.package.tslint" value="(autodetect)" />
     <property name="nodejs_package_manager_path" value="npm" />
   </component>
   <component name="RunManager">
-    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" PASS_PARENT_ENVS_2="true">
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
-        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
     <configuration name="microDBMS" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="microDBMS" TARGET_NAME="microDBMS" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="microDBMS" RUN_TARGET_NAME="microDBMS">
@@ -71,7 +90,8 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1686018905318</updated>
-      <workItem from="1686018907259" duration="13285000" />
+      <workItem from="1686018907259" duration="20640000" />
+      <workItem from="1686452065803" duration="11661000" />
     </task>
     <servers />
   </component>
@@ -88,19 +108,25 @@
         </entry>
       </map>
     </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/QL/ql_manager.cc</url>
-          <line>119</line>
-          <option name="timeStamp" value="7" />
+          <url>file://$PROJECT_DIR$/PARSER/interp.cc</url>
+          <line>85</line>
+          <option name="timeStamp" value="13" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/PARSER/interp.cc</url>
-          <line>96</line>
-          <option name="timeStamp" value="47" />
+          <url>file://$PROJECT_DIR$/QL/ql_manager.cc</url>
+          <line>124</line>
+          <option name="timeStamp" value="26" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/QL/ql_manager.cc</url>
+          <line>122</line>
+          <option name="timeStamp" value="27" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

@@ -80,8 +80,11 @@ public:
     
     //Print
     void Print(std::ostream &c, const char * const data, bool isnull[]);
-    
-
+    static void myPrint(std::ostream & c, const int *seldata, int sellen, int selheadlen, const int *cludata, int clulen, int cluheadlen);
+    static void myPrint2(std::ostream & c, const char *seldata, int sellen, int selheadlen, const int *cludata, int clulen, int cluheadlen);
+    static void myPrinter(std::ostream & c, const char * const data, DataAttrInfo *attributes,int attrCount, bool isnull[]);
+    static void myPrintHeader(std::ostream& c, char *selheader,char * cluheader);
+    static void myPrintHeader2(std::ostream& c, int attrCount,DataAttrInfo *attributes);
 private:
     //属性目录
     DataAttrInfo *attributes;
@@ -95,6 +98,8 @@ private:
 
     //打印的元组数
     int iCount;
+
+
 };
 
 

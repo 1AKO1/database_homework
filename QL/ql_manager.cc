@@ -6,6 +6,7 @@
 #include <set>
 #include <numeric>
 #include <cassert>
+#include <regex>
 #include "ql.h"
 #include "ql_iterator.h"
 #include "ql_disjoint.h"
@@ -109,6 +110,7 @@ template <typename T, typename F>
 inline void map_function(T &container, const F &func) {
     std::transform(container.begin(), container.end(), container.begin(), func);
 };
+
 
 /**
  * 执行查询操作
@@ -792,6 +794,478 @@ RC QL_Manager::Delete(const char *relName, int nConditions, const Condition *con
 
     return 0;
 }
+
+/*
+*执行聚集操作
+*/
+RC QL_Manager::Cluster(const char* cluster_type, const RelAttr &cluAttr, const char* relName,int nConditions, const Condition *conditions) {
+    /*
+     * cluster_type: the type of cluster function
+     * cluAttr: the parameter of cluster function, which field we apply the cluster function.
+     * relName: the table we query
+     * nCondition is the number of conditions.
+     * */
+    if (!strcmp(relName, "relcat") || !strcmp(relName, "attrcat")) return QL_FORBIDDEN;
+    RelCatEntry relEntry;
+    TRY(pSmm->GetRelEntry(relName, relEntry));
+
+    int attrCount;
+    std::vector<DataAttrInfo> attributes;   //关系表中的属性列表
+    // 获取关系表的属性个数与实行列表
+    TRY(pSmm->GetDataAttrInfo(relName, attrCount, attributes, true));
+    std::map<std::string, DataAttrInfo> attrMap;    // 属性名字符串向属性DataAttrInfo映射的map
+    for (auto info : attributes)
+        attrMap[info.attrName] = info;
+
+    std::vector<QL_Condition> conds;
+    // 检查解析器传入的条件列表（Condition对象）是否合法，并生成对应QL_Condition对象的条件列表，存储在conds中
+    TRY(CheckConditionsValid(relName, nConditions, conditions, attrMap, conds));
+
+    RM_FileHandle fileHandle;
+    TRY(pRmm->OpenFile(relName, fileHandle));
+    RM_FileScan scan;
+    TRY(scan.OpenScan(fileHandle, INT, 4, 0, NO_OP, NULL));
+    RM_Record record;
+    RC retcode;
+
+    if (!strcmp(cluster_type, "COUNT")){
+        int num=0;
+        // 遍历每一条记录
+        while ((retcode = scan.GetNextRec(record)) != RM_EOF) {
+            if (retcode) return retcode;
+            char *data;
+            bool *isnull;
+            // 获取记录中数据（的起始位置）
+            TRY(record.GetData(data));
+            // 获取空值字段数据
+            TRY(record.GetIsnull(isnull));
+            bool shouldCluster = true;
+            // 判断当前记录是否满足条件列表中所有条件
+            for (int i = 0; i < nConditions && shouldCluster; ++i)
+                shouldCluster = checkSatisfy(data, isnull, conds[i]);
+
+            if (shouldCluster)
+                num++;
+
+        }
+        TRY(scan.CloseScan());
+        TRY(pRmm->CloseFile(fileHandle));
+
+        std::cout << "COUNT: " << num << std::endl;
+
+        return 0;
+    }
+
+    // 检查聚类属性是否属于关系表
+    TRY(checkAttrBelongsToRel(cluAttr, relName));
+
+
+    DataAttrInfo updAttrInfo = attrMap[cluAttr.attrName];       // 属性的DataAttrInfo对象
+    int n_type;
+    if (!strcmp(cluster_type, "SUM"))
+        n_type=1;
+    if (!strcmp(cluster_type, "AVG"))
+        n_type=2;
+    if (!strcmp(cluster_type, "MIN"))
+        n_type=3;
+    if (!strcmp(cluster_type, "MAX"))
+        n_type=4;
+    int result_sum=0;
+    int result_min=999999999;
+    int result_max=0;
+    int num=0;
+    if(updAttrInfo.attrType==STRING){
+        std::cout << "error: String type" << std::endl;
+        return 0;
+    }
+    // 遍历每一条记录
+    while ((retcode = scan.GetNextRec(record)) != RM_EOF) {
+        if (retcode) return retcode;
+        char *data;
+        bool *isnull;
+        // 获取记录中数据（的起始位置）
+        TRY(record.GetData(data));
+        // 获取空值字段数据
+        TRY(record.GetIsnull(isnull));
+        bool shouldCluster = true;
+        // 判断当前记录是否满足条件列表中所有条件
+        for (int i = 0; i < nConditions && shouldCluster; ++i)
+            shouldCluster = checkSatisfy(data, isnull, conds[i]);
+
+        if (shouldCluster) {
+            switch (n_type) {
+                case 1:
+                    result_sum += *(int *) (data + updAttrInfo.offset);
+                    break;
+                case 2:
+                    result_sum += *(int *) (data + updAttrInfo.offset);
+                    num++;
+                    break;
+                case 3:
+                    if (*(int *) (data + updAttrInfo.offset) < result_min)
+                        result_min = *(int *) (data + updAttrInfo.offset);
+                    break;
+                case 4:
+                    if (*(int *) (data + updAttrInfo.offset) > result_max)
+                        result_max = *(int *) (data + updAttrInfo.offset);
+                    break;
+            }
+        }
+
+    }
+    TRY(scan.CloseScan());
+    TRY(pRmm->CloseFile(fileHandle));
+
+    switch (n_type){
+        case 1:
+            std::cout << "SUM : " << result_sum << std::endl;
+            break;
+        case 2:
+            if (num==0){
+                std::cout << "AVG: count is zero." << std::endl;
+            }
+            else{
+                std::cout << "AVG: " << 1.0*result_sum/num << std::endl;
+            }
+            break;
+        case 3:
+            std::cout << "MIN: " << result_min << std::endl;
+            break;
+        case 4:
+            std::cout << "MAX: " << result_max << std::endl;
+            break;
+    }
+    return 0;
+
+}
+
+/*
+*分组聚类
+*/
+
+RC QL_Manager::GROUP_Cluster(const RelAttr &sleAttr, const char *cluster_type, const RelAttr &cluAttr,
+                             const char *relName, const RelAttr &groAttr) {
+    if (!strcmp(relName, "relcat") || !strcmp(relName, "attrcat")) return QL_FORBIDDEN;
+    if (strcmp(sleAttr.attrName, groAttr.attrName)!=0) {
+        std::cout<<"Illegal aggregate statement" << std::endl;
+    }
+
+    RelCatEntry relEntry;
+    TRY(pSmm->GetRelEntry(relName, relEntry));
+
+    // 检查待查询的属性是否属于关系表
+    TRY(checkAttrBelongsToRel(sleAttr, relName));
+
+    // 检查聚集的属性是否属于关系表
+    TRY(checkAttrBelongsToRel(cluAttr, relName));
+
+    int attrCount;
+    std::vector<DataAttrInfo> attributes;   //关系表中的属性列表
+    // 获取关系表的属性个数与属性列表
+    TRY(pSmm->GetDataAttrInfo(relName, attrCount, attributes, true));
+    std::map<std::string, DataAttrInfo> attrMap;    // 属性名字符串向属性DataAttrInfo映射的map
+    for (auto info : attributes)
+        attrMap[info.attrName] = info;
+
+
+    DataAttrInfo selAttrInfo = attrMap[sleAttr.attrName];       // 查询属性的DataAttrInfo对象
+    DataAttrInfo cluAttrInfo = attrMap[cluAttr.attrName];       // 聚集属性的DataAttrInfo对象
+
+    RM_FileHandle fileHandle;
+    TRY(pRmm->OpenFile(relName, fileHandle));
+    RM_FileScan scan;
+    TRY(scan.OpenScan(fileHandle, INT, 4, 0, NO_OP, NULL));
+    RM_Record record;
+    RC retcode;
+    int n_type;
+    if (!strcmp(cluster_type, "SUM"))
+        n_type = 1;
+    if (!strcmp(cluster_type, "AVG"))
+        n_type = 2;
+    if (!strcmp(cluster_type, "MIN"))
+        n_type = 3;
+    if (!strcmp(cluster_type, "MAX"))
+        n_type = 4;
+    float result_sum = 0.0;
+    float result_min = 99999999999999.0;
+    float result_max = 0.0;
+    int num = 0;
+    if (cluAttrInfo.attrType == STRING) {
+        std::cout << "error: String type" << std::endl;
+        return 0;
+    }
+    if(selAttrInfo.attrType == INT) {
+        std::map<int, int> sumMap;    // 每组对应的sum
+        std::map<int, int> minMap;    // 每组对应的min
+        std::map<int, int> maxMap;    // 每组对应的max
+        std::map<int, int> numMap;    // 每组对应的num
+        // 遍历每一条记录
+        while ((retcode = scan.GetNextRec(record)) != RM_EOF) {
+            if (retcode) return retcode;
+            char *data;
+            // 获取记录中数据（的起始位置）
+            TRY(record.GetData(data));
+            //panduanjuleideleixing
+            switch (n_type) {
+                case 1:
+
+                    if (sumMap.find(*(int *) (data + selAttrInfo.offset)) != sumMap.end()) {
+                        sumMap[*(int *) (data + selAttrInfo.offset)] += *(int *) (data + cluAttrInfo.offset);
+                    } else {
+                        sumMap[*(int *) (data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
+                    }
+                    break;
+                case 2:
+                    if (sumMap.find(*(int *) (data + selAttrInfo.offset)) != sumMap.end()) {
+                        sumMap[*(int *) (data + selAttrInfo.offset)] += *(int *) (data + cluAttrInfo.offset);
+                        numMap[*(int *) (data + selAttrInfo.offset)] += 1;
+                    } else {
+                        sumMap[*(int *) (data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
+                        numMap[*(int *) (data + selAttrInfo.offset)] = 1;
+                    }
+                    break;
+                case 3:
+                    if (minMap.find(*(int *) (data + selAttrInfo.offset)) != minMap.end()) {
+                        if (*(int *) (data + cluAttrInfo.offset) < minMap[*(int *) (data + selAttrInfo.offset)]) {
+                            minMap[*(int *) (data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
+                        }
+                    } else {
+                        minMap[*(int *) (data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
+                    }
+                    break;
+                case 4:
+                    if (maxMap.find(*(int *) (data + selAttrInfo.offset)) != maxMap.end()) {
+                        if (*(int *) (data + cluAttrInfo.offset) > maxMap[*(int *) (data + selAttrInfo.offset)]) {
+                            maxMap[*(int *) (data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
+                        }
+                    } else {
+                        maxMap[*(int *) (data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
+                    }
+                    break;
+            }
+        }
+        TRY(scan.CloseScan());
+        TRY(pRmm->CloseFile(fileHandle));
+        int tuple_num=0;
+
+        Printer::myPrintHeader(std::cout, sleAttr.attrName, cluAttr.attrName);
+        std::map<int,int>::reverse_iterator it;
+        switch (n_type) {
+            case 1:
+                tuple_num = sumMap.size();
+                for (it = sumMap.rbegin(); it != sumMap.rend(); it++){
+                    std::cout<<it->first<<" "<<it->second<<std::endl;
+                }
+                break;
+            case 2:
+                tuple_num = sumMap.size();
+                for (it = sumMap.rbegin(); it != sumMap.rend(); it++){
+                    int temp;
+                    if (numMap[it->first]!=0)
+                        temp=1.0*(it->second)/numMap[it->first];
+                    else{
+                        temp=0;
+                    }
+                    std::cout<<it->first<<" "<<temp<<std::endl;
+                }
+                break;
+            case 3:
+                tuple_num = minMap.size();
+                for (it = minMap.rbegin(); it != minMap.rend(); it++)
+                    std::cout<<it->first<<" "<<it->second<<std::endl;
+                break;
+            case 4:
+                tuple_num = maxMap.size();
+                for (it = maxMap.rbegin(); it != maxMap.rend(); it++)
+                    std::cout<<it->first<<" "<<it->second<<std::endl;
+                break;
+        }
+        std::cout << tuple_num<< " tuple(s).\n";
+    }
+    if(selAttrInfo.attrType == STRING) {
+        std::map<std::string, int> sumMap;    // 每组对应的sum
+        std::map<std::string, int> minMap;    // 每组对应的min
+        std::map<std::string, int> maxMap;    // 每组对应的max
+        std::map<std::string, int> numMap;    // 每组对应的num
+        // 遍历每一条记录
+        while ((retcode = scan.GetNextRec(record)) != RM_EOF) {
+            if (retcode) return retcode;
+            char *data;
+            // 获取记录中数据（的起始位置）
+            TRY(record.GetData(data));
+            //panduanjuleideleixing
+
+            switch (n_type) {
+                case 1:
+
+                    if (sumMap.find((data + selAttrInfo.offset)) != sumMap.end()) {
+                        sumMap[(data + selAttrInfo.offset)] += *(int *) (data + cluAttrInfo.offset);
+                    } else {
+                        sumMap[(data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
+                    }
+                    break;
+                case 2:
+                    if (sumMap.find((data + selAttrInfo.offset)) != sumMap.end()) {
+                        sumMap[(data + selAttrInfo.offset)] += *(int *) (data + cluAttrInfo.offset);
+                        numMap[(data + selAttrInfo.offset)] += 1;
+                    } else {
+                        sumMap[(data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
+                        numMap[(data + selAttrInfo.offset)] = 1;
+                    }
+                    break;
+                case 3:
+                    if (minMap.find((data + selAttrInfo.offset)) != minMap.end()) {
+                        if (*(int *) (data + cluAttrInfo.offset) < minMap[(data + selAttrInfo.offset)]) {
+                            minMap[(data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
+                        }
+                    } else {
+                        minMap[(data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
+                    }
+                    break;
+                case 4:
+                    if (maxMap.find((data + selAttrInfo.offset)) != maxMap.end()) {
+                        if (*(int *) (data + cluAttrInfo.offset) > maxMap[(data + selAttrInfo.offset)]) {
+                            maxMap[(data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
+                        }
+                    } else {
+                        maxMap[(data + selAttrInfo.offset)] = *(int *) (data + cluAttrInfo.offset);
+                    }
+                    break;
+            }
+
+        }
+        TRY(scan.CloseScan());
+        TRY(pRmm->CloseFile(fileHandle));
+        int tuple_num=0;
+
+        Printer::myPrintHeader(std::cout, sleAttr.attrName, cluAttr.attrName);
+        std::map<std::string,int>::reverse_iterator it;
+        switch (n_type) {
+            case 1:
+                tuple_num = sumMap.size();
+                for (it = sumMap.rbegin(); it != sumMap.rend(); it++)
+                    std::cout<<it->first<<" "<<it->second<<std::endl;
+//                    Printer::myPrint2(std::cout, it->first, selAttrInfo.attrDisplayLength, strlen(sleAttr.attrName),&(it->second), cluAttrInfo.attrDisplayLength, strlen(cluAttr.attrName));
+                break;
+            case 2:
+                tuple_num = sumMap.size();
+                for (it = sumMap.rbegin(); it != sumMap.rend(); it++){
+                    int temp;
+                    if (numMap[it->first]!=0)
+                        temp=(it->second)/numMap[it->first];
+                    else{
+                        temp=0;
+                    }
+                    std::cout<<it->first<<" "<<it->second<<std::endl;
+//                    Printer::myPrint2(std::cout, it->first, selAttrInfo.attrDisplayLength, strlen(sleAttr.attrName),&temp, cluAttrInfo.attrDisplayLength, strlen(cluAttr.attrName));
+                }
+                break;
+            case 3:
+                tuple_num = minMap.size();
+                for (it = minMap.rbegin(); it != minMap.rend(); it++)
+                    std::cout<<it->first<<" "<<it->second<<std::endl;
+//                    Printer::myPrint2(std::cout, it->first, selAttrInfo.attrDisplayLength, strlen(sleAttr.attrName), &(it->second), cluAttrInfo.attrDisplayLength, strlen(cluAttr.attrName));
+                break;
+            case 4:
+                tuple_num = maxMap.size();
+                for (it = maxMap.rbegin(); it != maxMap.rend(); it++)
+                    std::cout<<it->first<<" "<<it->second<<std::endl;
+//                    Printer::myPrint2(std::cout, it->first, selAttrInfo.attrDisplayLength, strlen(sleAttr.attrName), &(it->second), cluAttrInfo.attrDisplayLength, strlen(cluAttr.attrName));
+                break;
+        }
+        std::cout << tuple_num<< " tuple(s).\n";
+    }
+
+    return 0;
+}
+
+RC QL_Manager::Select_like(int nSelAttrs, const RelAttr *selAttrs, const char *relName, const RelAttr &likeAttr,
+                           const char *like_str) {
+    int like_type=1;
+    // 打开查询涉及的数据库表文件
+    RM_FileHandle fileHandle;
+    TRY(pRmm->OpenFile(relName, fileHandle));
+    RM_FileScan scan;
+    TRY(scan.OpenScan(fileHandle, INT, 4, 0, NO_OP, NULL));
+    RM_Record record;
+    RC retcode;
+
+    RelCatEntry relEntries;
+    TRY(pSmm->GetRelEntry(relName, relEntries));
+    VLOG(2) << "files opened";
+
+    /**
+     * Check if like query is valid
+     */
+    // create mappings of attribute names to corresponding info
+    int attrCount;
+    std::vector<DataAttrInfo> attributes;   //关系表中的属性列表
+    // 获取关系表的属性个数与属性列表
+    TRY(pSmm->GetDataAttrInfo(relName, attrCount, attributes, true));
+    std::map<std::string, DataAttrInfo> attrMap;    // 属性名字符串向属性DataAttrInfo映射的map
+    for (auto info : attributes)
+        attrMap[info.attrName] = info;
+    VLOG(2) << "attribute name mapping created";
+
+    // 检查查询的属性是否存在
+    for ( int i=0; i<nSelAttrs;i++)
+        TRY(checkAttrBelongsToRel(selAttrs[i], relName));
+    TRY(checkAttrBelongsToRel(likeAttr, relName));
+    if (nSelAttrs == 1 && !strcmp(selAttrs[0].attrName, "*")) {
+        nSelAttrs = attrCount;
+    }
+
+    DataAttrInfo selAttrInfolist[nSelAttrs];
+    if (nSelAttrs==attrCount){
+        int this_num=0;
+        for (auto info : attributes){
+            selAttrInfolist[this_num++] = info;
+        }
+    }else{
+        for ( int i=0;i<nSelAttrs;i++)
+            selAttrInfolist[i]=attrMap[selAttrs[i].attrName];
+    }
+    DataAttrInfo likeAttrInfo = attrMap[likeAttr.attrName];
+    VLOG(2) << "all attributes exist";
+    const char *A="_";
+    const char *B="%";
+    std::regex like_reg1(A);
+    std::regex like_reg2(B);
+    std::string temp1=std::regex_replace(like_str, like_reg1,".");
+    temp1=std::regex_replace(temp1, like_reg2,".*");
+
+    Printer::myPrintHeader2(std::cout, nSelAttrs,selAttrInfolist);
+    std::vector<int> is_result;   //关系表中的属性列表
+    int count=0;
+    while ((retcode = scan.GetNextRec(record)) != RM_EOF) {
+        if (retcode) return retcode;
+        char* data;
+        bool* isnull;
+        // 获取记录中数据（的起始位置）
+        TRY(record.GetData(data));
+        TRY(record.GetIsnull(isnull));
+        //panduanjuleideleixing
+        std::regex like_reg(temp1);
+        std::smatch result;
+        char * temp2= data + likeAttrInfo.offset;
+        bool ret=std::regex_match(temp2,like_reg);
+//        std::string B=std::string(like_str);
+        if(ret){
+            Printer::myPrinter(std::cout,data,selAttrInfolist,nSelAttrs,isnull);
+            count++;
+        }
+
+    }
+    TRY(scan.CloseScan());
+    TRY(pRmm->CloseFile(fileHandle));
+    std::cout << count<< " tuple(s).\n";
+    return 0;
+}
+
+
+
+
+
 
 /**
  * 执行更新操作（更新一个属性）

@@ -166,6 +166,11 @@ static int get_id(char *s) {
         return yylval.ival = RW_DESC;
     if (!strcmp(string, "group"))
         return yylval.ival = RW_GROUP;
+    if (!strcmp(string, "by"))
+        return yylval.ival = RW_BY;
+    if (!strcmp(string, "like"))
+        return yylval.ival = RW_LIKE;
+    
 
     /*  unresolved lexemes are strings */
 

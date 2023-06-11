@@ -127,6 +127,7 @@ QL_Manager *pQlm;          // QL component manager
       T_WILDCARD
       T_PLACE
 
+
 %token   <ival>   T_INT
 
 %token   <rval>   T_REAL
@@ -483,7 +484,7 @@ non_mt_attrtype_list
    ;
 
 attrtype
-   : T_STRING T_STRING '(' T_INT ')'
+   : T_STRING T_STRING '(' T_INT ')'T_STRING
    {
       $$ = attrtype_node($1, $2, $4, ATTR_SPEC_NONE);
    }
@@ -511,14 +512,6 @@ like_sql_list
        $$ = value_node(STRING, (void *) $1);
     }
 
-non_mt_select_clause
-   : non_mt_relattr_list
-   | '*'
-   {
-       $$ = list_node(relattr_node(NULL, (char*)"*"));
-   }
-   ;
-
 non_mt_relattr_list
    : relattr ',' non_mt_relattr_list
    {
@@ -538,6 +531,10 @@ relattr
    | T_STRING
    {
       $$ = relattr_node(NULL, $1);
+   }
+   | '*'
+   {
+      $$ = relattr_node(NULL, (char*)"*");
    }
    ;
 
@@ -730,7 +727,7 @@ void RBparse(PF_Manager &pfm, SM_Manager &smm, QL_Manager &qlm)
    pSmm  = &smm;
    pQlm  = &qlm;
    bExit = 0;
-   bQueryPlans = 1; /* changed */
+   bQueryPlans = 0;
 
    /* Do forever */
    while (!bExit) {

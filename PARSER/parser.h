@@ -22,7 +22,6 @@ struct AttrInfo {
 struct RelAttr {
     char     *relName;  // Relation name (may be NULL)
     char     *attrName; // Attribute name
-    char     *aggregate; //
 #ifdef __cplusplus
     // Print function
     friend std::ostream &operator<<(std::ostream &s, const RelAttr &ra);

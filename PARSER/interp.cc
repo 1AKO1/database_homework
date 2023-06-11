@@ -43,7 +43,9 @@ DEFINE_bool(n, false,
 static int mk_attr_infos(NODE *list, int max, AttrInfo attrInfos[]);
 static int parse_format_string(char *format_string, AttrType *type, int *len);
 static int mk_rel_attrs(NODE *list, int max, RelAttr relAttrs[]);
+static char* mk_like_chars(NODE *list,int max);
 static void mk_rel_attr(NODE *node, RelAttr &relAttr);
+static char* mk_like_char(NODE *node);
 static int mk_relations(NODE *list, int max, char *relations[]);
 static int mk_conditions(NODE *list, int max, Condition conditions[]);
 static int mk_values(NODE *list, int max, Value values[]);
@@ -303,6 +305,61 @@ RC interp(NODE *n) {
                               nConditions, conditions);
         break;
     }
+    case N_CLUSTER: {
+        RelAttr relAttr;
+        int       nConditions = 0;
+        Condition conditions[MAXATTRS];
+
+        /* Make a RelAttr suitable for sending to Cluster */
+        mk_rel_attr(n->u.CLUSTER.relattr, relAttr);
+        /* Make a list of Conditions suitable for sending to Query */
+        nConditions = mk_conditions(n->u.CLUSTER.conditionlist, MAXATTRS,
+                                    conditions);
+        if (nConditions < 0) {
+            print_error((char*)"cluster", nConditions);
+            break;
+        }
+ 
+        errval = pQlm->Cluster(n->u.CLUSTER.cluster_type,relAttr,n->u.CLUSTER.relname,nConditions, conditions);
+        break;
+    }
+    
+    case N_GROUP_CLUSTER: {
+        RelAttr select_relAttr;
+        RelAttr cluster_relAttr;
+        RelAttr group_relAttr;
+
+        /* Make a RelAttr suitable for sending to group_Cluster */
+        mk_rel_attr(n->u.GROUP_CLUSTER.select_relattr, select_relAttr);
+        mk_rel_attr(n->u.GROUP_CLUSTER.cluster_relattr, cluster_relAttr);
+        mk_rel_attr(n->u.GROUP_CLUSTER.group_relattr, group_relAttr);
+
+      
+        errval = pQlm->GROUP_Cluster(select_relAttr,n->u.GROUP_CLUSTER.cluster_type,cluster_relAttr,
+                                       n->u.GROUP_CLUSTER.relname,group_relAttr);
+        break;
+    }
+
+    case N_SELECT_LIKE:{
+        int       nSelAttrs = 0;
+        RelAttr  relAttrs[MAXATTRS];
+        RelAttr like_relAttr;
+        char *like_str;
+        /* Make a list of RelAttrs suitable for sending to Query */
+        nSelAttrs = mk_rel_attrs(n->u.SELECT_LIKE.relattrlist, MAXATTRS,
+                                 relAttrs);
+        if (nSelAttrs < 0) {
+            print_error((char*)"select", nSelAttrs);
+            break;
+        }
+
+        mk_rel_attr(n->u.SELECT_LIKE.like_relattr, like_relAttr);
+        like_str=n->u.SELECT_LIKE.like_sql_type->u.VALUE.sval;
+
+        /* Make the call to Select */
+        errval = pQlm->Select_like(nSelAttrs, relAttrs,n->u.SELECT_LIKE.relname,like_relAttr,like_str);
+        break;
+    }
 
     case N_INSERT: {          /* for Insert() */
         int nValues = 0;
@@ -491,6 +548,7 @@ static int mk_rel_attrs(NODE *list, int max, RelAttr relAttrs[]) {
     return i;
 }
 
+
 /*
  mk_rel_attr：转换单个关系属性（<属性>对）成一个RelAttr
 */
@@ -498,6 +556,8 @@ static void mk_rel_attr(NODE *node, RelAttr &relAttr) {
     relAttr.relName = node->u.RELATTR.relname;
     relAttr.attrName = node->u.RELATTR.attrname;
 }
+
+
 
 /*
  mk_relations：将关系列表转换为关系数组

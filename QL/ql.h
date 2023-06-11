@@ -55,6 +55,24 @@ public:
                 int   nConditions,               // where条件个数
                 const Condition conditions[]);   // 条件列表
 
+    // 聚集操作
+    RC Cluster (const char *cluster_type,         // 聚集的类型 SUM，AVG，MIN，MAX
+                const RelAttr &cluAttr,             //聚集的属性
+                const char *relName,              //聚集的关系表
+                int   nConditions,               // where条件个数
+                const Condition conditions[]);   // 条件列表
+    // 分组聚类
+    RC GROUP_Cluster(const RelAttr& sleAttr,     //查询属性
+                     const char* cluster_type,   //聚类类型
+                     const RelAttr& cluAttr,      //聚类属性
+                     const char* relName,        //聚集的关系表
+                     const RelAttr& groAttr);     //分组属性
+    RC Select_like(int nSelAttrs,                   // select属性的个数
+                   const RelAttr selAttrs[],        // 属性列表
+                   const char* relName,        //聚集的关系表
+                   const RelAttr& likeAttr,      //聚类属性
+                   const char* like_str);
+
 private:
     SM_Manager *pSmm;   // SM_Manager对象
     IX_Manager *pIxm;   // IX_Manager对象

@@ -51,9 +51,10 @@ typedef enum {
     N_RELATION,
     N_STATISTICS,
     N_LIST,
-    N_CLUSTER,
-    N_GROUP_CLUSTER,
-    N_SELECT_LIKE
+    N_CLUSTER,  //聚集节点
+    N_GROUP_CLUSTER, //分组聚集节点
+    N_SELECT_LIKE, //
+    N_LIKE_SQL_CHAR
 } NODEKIND;
 
 
@@ -188,9 +189,10 @@ typedef struct node {
             struct node *next;
         } LIST;
 
+        /* 聚类节点*/
         struct {
             char* cluster_type;
-            struct node * relattr;
+            struct node *relattr;
             char* relname;
             struct node *conditionlist;
         } CLUSTER;
@@ -210,6 +212,7 @@ typedef struct node {
             struct node *like_relattr;
             struct node *like_sql_type;
         } SELECT_LIKE;
+
     } u;
 } NODE;
 
