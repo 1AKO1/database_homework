@@ -256,8 +256,8 @@ NODE *prepend(NODE *n, NODE *list);
 NODE *prepend_list(NODE *l, NODE* list);
 NODE *cluster_node(char *cluster_type, NODE *relattr, char *relname, NODE *conditionlist);
 NODE *group_cluster_node(NODE *select_relattr, char *cluster_type, NODE *cluster_relattr, char *relname, NODE *conditionlist, NODE *group_relattr);
-NODE *select_like_node(NODE *relattrlist,char *relname, NODE *like_relattr, NODE *like_sql_char);
 NODE *query_order_node(NODE *relattrlist, char *relname, NODE *conditionlist, NODE *order_attr);
+NODE *select_like_node(NODE *relattrlist,char *relname, NODE *like_relattr, NODE *like_sql_char);
 
 #ifdef __cplusplus
 extern "C" void reset_scanner(void);

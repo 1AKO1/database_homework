@@ -1291,7 +1291,7 @@ RC QL_Manager::Select_order(int nSelAttrs,                   // select属性的�
     RM_FileScan scan;
     TRY(scan.OpenScan(fileHandle, INT, 4, 0, NO_OP, NULL));
     RM_Record record;
-    std::vector<RM_Record> recordList; // list of conditional record;
+    std::vector<std::vector<int>> recordList; // list of conditional record;
     RC retcode;
 
     RelCatEntry relEntries;
@@ -1343,6 +1343,12 @@ RC QL_Manager::Select_order(int nSelAttrs,                   // select属性的�
     Printer::myPrintHeader2(std::cout, nSelAttrs,selAttrInfolist);
     std::vector<int> is_result;   //关系表中的属性列表
     int count=0;
+
+    DataAttrInfo customer_id = attrMap["customer_id"];
+    DataAttrInfo book_id = attrMap["book_id"];
+    DataAttrInfo quantity = attrMap["quantity"];
+
+
     while ((retcode = scan.GetNextRec(record)) != RM_EOF) {
         if (retcode) return retcode;
         char *data;
@@ -1356,31 +1362,25 @@ RC QL_Manager::Select_order(int nSelAttrs,                   // select属性的�
         for (int i = 0; i < nConditions && shouldCluster; ++i)
             shouldCluster = checkSatisfy(data, isnull, conds[i]);
 
-        if (shouldCluster)
+        if (shouldCluster){
             count++;
-//            recordList.push_back(record);
+            recordList.push_back({{
+                *(int*)(data + customer_id.offset),
+                *(int*)(data + book_id.offset),
+                *(int*)(data + quantity.offset)}});
+        }
+
     }
 
-//    std::sort(recordList.begin(), recordList.end(), [orderAttrInfo](const RM_Record* record1, const RM_Record* record2) {
-//        char* data1;
-//        char* data2;
-//        record1->GetData(data1);
-//        record2->GetData(data2);
-//
-//        int order1 = *(int*)(data1 + orderAttrInfo.offset);
-//        int order2 = *(int*)(data2 + orderAttrInfo.offset);
-//
-//        return order1 < order2;
-//    });
+    std::sort(recordList.begin(), recordList.end(), [](const std::vector<int> &record1, const std::vector<int> &record2) {
 
-    std::cout << "condition successfully:" << count << std:: endl;
-//    for (const RM_Record &record : recordList) {
-//        char* data;
-//        record.GetData(data);
-//
-//        int order = *(int*)(data + orderAttrInfo.offset);
-//        std::cout << order << std:: endl;
-//    }
+        return record1[2] > record2[2];
+    });
+
+    for (const std::vector<int> &record : recordList) {
+
+        std::cout << record[0] << "\t\t\t" << record[1] << "\t\t\t" << record[2] << std:: endl;
+    }
 
 
     TRY(scan.CloseScan());

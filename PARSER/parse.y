@@ -42,7 +42,7 @@ void yyrestart(FILE*);
 // statistics about the DB.
 #ifdef PF_STATS
 #include "statistics.h"
-
+F
 // This is defined within the pf_buffermgr.cc
 extern StatisticsMgr *pStatisticsMgr;
 
@@ -447,19 +447,19 @@ group_cluster
     }
     ;
 
+query_order
+   : RW_SELECT non_mt_select_clause RW_FROM T_STRING opt_where_clause RW_ORDER RW_BY relattr RW_DESC
+   {
+      $$ = query_order_node($2, $4, $5, $8);
+   }
+   ;
+
 select_like
     : RW_SELECT non_mt_select_clause RW_FROM T_STRING RW_WHERE relattr RW_LIKE like_sql_list
     {
         $$ = select_like_node($2, $4,$6,$8);
     }
     ;
-
-query_order
-   : RW_SELECT non_mt_select_clause RW_FROM T_STRING opt_where_clause RW_ORDER RW_BY relattr
-   {
-      $$ = query_order_node($2, $4, $5, $8);
-   }
-   ;
 
 insert
    : RW_INSERT RW_INTO T_STRING RW_VALUES non_mt_quoted_values_list

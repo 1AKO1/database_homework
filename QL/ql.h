@@ -69,17 +69,17 @@ public:
                      int nConditions,
                      const Condition conditions[],
                      const RelAttr& groAttr);     //分组属性
-    RC Select_like(int nSelAttrs,                   // select属性的个数
-                   const RelAttr selAttrs[],        // 属性列表
-                   const char* relName,        //聚集的关系表
-                   const RelAttr& likeAttr,      //聚类属性
-                   const char* like_str);
     RC Select_order  (int nSelAttrs,                   // select属性的个数
                       const RelAttr selAttrs[],        // 属性列表
                       const char* relName,
                       int   nConditions,               // where条件个数
                       const Condition conditions[],
                       const RelAttr &orderAttr);   // 条件列表
+    RC Select_like(int nSelAttrs,                   // select属性的个数
+                   const RelAttr selAttrs[],        // 属性列表
+                   const char* relName,        //聚集的关系表
+                   const RelAttr& likeAttr,      //聚类属性
+                   const char* like_str);
 
 private:
     SM_Manager *pSmm;   // SM_Manager对象

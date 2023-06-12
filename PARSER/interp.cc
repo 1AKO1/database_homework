@@ -70,7 +70,7 @@ static char current_db[MAXNAME];
 RC interp(NODE *n) {
     //返回的错误值
     RC errval = 0;
-    std::cout << "heihei" << std::endl;
+
     //如果输入不是来自终端，则回显查询
     //if (!isatty(0))
     //    echo_query(n);
